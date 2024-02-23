@@ -12,7 +12,7 @@ f_prime = "REDACTED"
 f_second_prime = "REDACTED"
 
 assert(2*f_second_prime - 6*f_prime + 3*f == 0)
-assert(f.subs(x, 0) == 4 and f_prime.subs(x, 0) == 14)
+assert(f.subs(x, 0) | f_prime.subs(x, 0) == 14)
 
 def encrypt(message, key):
     global f
