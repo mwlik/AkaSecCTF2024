@@ -1,7 +1,10 @@
+from Crypto.Cipher import AES
+from Crypto.Random import get_random_bytes
+import hashlib
 import sympy as sp
 import random
 
-FLAG = "AKASEC{fake_flag}"
+FLAG = b'AKASEC{fake_flag}'
 
 key = random.getrandbits(7)
 
@@ -18,7 +21,12 @@ def encrypt(message, key):
     global f
     global x
     point = f.subs(x, key)
-    return [(ord(char) + int(point.evalf())) for char in message]
+    point_hash = hashlib.sha256(str(point).encode()).digest()
+    cipher = AES.new(point_hash, AES.MODE_EAX)
+    ciphertext, tag = cipher.encrypt_and_digest(message)
+    nonce = cipher.nonce
+    return ciphertext.hex(), nonce, tag
+
 
 encrypted = encrypt(FLAG, key)
 
