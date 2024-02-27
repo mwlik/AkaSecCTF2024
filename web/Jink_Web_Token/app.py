@@ -14,14 +14,12 @@ def generate_string(length):
     return ''.join(random.choice(string.ascii_letters + string.digits) for _ in range(length))
 
 app.config['JWT_SECRET_KEY'] = generate_string(2)
-#print(app.config['JWT_SECRET_KEY'])
 jwt = JWTManager(app)
 
 users = {
     "user": {"username": "user", "password": generate_string(2), "role": "user"},
     "admin": {"username": "admin", "password": generate_string(32), "role": "admin"}
 }
-#print(users)
 
 @app.route('/login', methods=['POST'])
 def login():
