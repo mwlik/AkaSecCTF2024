@@ -1,1 +1,0 @@
-AKASEC{fake_flag}
