@@ -1,5 +1,4 @@
 from Crypto.Cipher import AES
-from Crypto.Random import get_random_bytes
 import hashlib
 import sympy as sp
 import random
@@ -27,6 +26,14 @@ def encrypt(message, key):
     nonce = cipher.nonce
     return ciphertext.hex(), nonce, tag
 
+def decrypt(ciphertext, key, tag , nonce):
+    global f
+    global x
+    point = f.subs(x, key)
+    point_hash = hashlib.sha256(str(point).encode()).digest()
+    cipher = AES.new(point_hash, AES.MODE_EAX, nonce)
+    message = cipher.decrypt_and_verify(bytes.fromhex(ciphertext), tag)
+    return message
 
 encrypted = encrypt(FLAG, key)
 

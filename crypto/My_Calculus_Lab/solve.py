@@ -1,5 +1,4 @@
 from Crypto.Cipher import AES
-from Crypto.Random import get_random_bytes
 import hashlib
 import sympy as sp
 import math
@@ -37,4 +36,4 @@ message = decrypt(ciphertext, key, tag, nonce)
 
 print(f"Key: {key}")
 print(f"Encrypted: {ciphertext}")
-#print(f"Decrypted: {message}")
+print(f"Decrypted: {message}")
