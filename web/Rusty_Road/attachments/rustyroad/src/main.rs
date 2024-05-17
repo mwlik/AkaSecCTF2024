@@ -2,8 +2,7 @@
 
 use rocket::form::Form;
 use rocket::http::ContentType;
-use rocket::response::Redirect;
-use serde::Deserialize;
+use rocket::response::Redirect; use serde::Deserialize;
 use serde::Serialize;
 use jsonwebtoken::{encode, Header, EncodingKey, decode, Validation, Algorithm, DecodingKey, TokenData};
 use jsonwebtoken::errors::Result;
@@ -14,6 +13,7 @@ use rocket::http::Cookie;
 use rocket::http::CookieJar;
 use std::sync::Mutex;
 use bcrypt::{hash, verify, DEFAULT_COST};
+use rocket_dyn_templates::{Template, context};
 
 lazy_static! {
     static ref SECRET: String = {
@@ -78,13 +78,15 @@ fn hash_password(password: &str) -> String {
     hash(password, DEFAULT_COST).unwrap()
 }
 
+#[get("/logout")]
+fn logout(cookies: &CookieJar<'_>) -> Redirect {
+    cookies.remove("token");
+    Redirect::to(uri!(home))
+}
+
 #[get("/register")]
-fn register_form() -> (ContentType, &'static str) {
-    (ContentType::HTML, "<form method='POST' action='/register'>
-        <input type='text' name='username' placeholder='Username'>
-        <input type='password' name='password' placeholder='Password'>
-        <input type='submit' value='Register'>
-    </form>")
+fn register_form() -> (ContentType, Template) {
+    (ContentType::HTML, Template::render("register", context! {}))
 }
 
 #[post("/register", data = "<form>")]
@@ -114,12 +116,8 @@ fn register(form: Form<RegisterForm>, cookies: &CookieJar<'_>) -> Redirect {
 }
 
 #[get("/login")]
-fn login_form() -> (ContentType, &'static str) {
-    (ContentType::HTML, "<form method='POST' action='/login'>
-        <input type='text' name='username' placeholder='Username'>
-        <input type='password' name='password' placeholder='Password'>
-        <input type='submit' value='Login'>
-    </form>")
+fn login_form() -> (ContentType, Template) {
+    (ContentType::HTML, Template::render("login", context! {}))
 }
 
 #[post("/login", data = "<form>")]
@@ -131,9 +129,9 @@ fn login(form: Form<RegisterForm>, cookies: &CookieJar<'_>) -> Redirect {
 
     let user = users_lock.iter().find(|user| user.username == username);
     if let Some(user) = user {
-        println!("{:?}", username);
-        println!("{:?}", password);
-        println!("{:?}", users_lock);
+        //println!("{:?}", username);
+        //println!("{:?}", password);
+        //println!("{:?}", users_lock);
         if verify(&password, &user.password).unwrap() {
             let user_type = if username == "admin" {
                 "admin".to_string()
@@ -157,39 +155,41 @@ fn login(form: Form<RegisterForm>, cookies: &CookieJar<'_>) -> Redirect {
 }
 
 #[get("/")]
-fn home(cookies: &CookieJar<'_>) -> String {
+fn home(cookies: &CookieJar<'_>) -> (ContentType, Template) {
     let token = cookies.get("token").map(|cookie| cookie.value()).unwrap_or("");
     match validate_token(token) {
         Ok(data) => {
             if data.claims.user_type == "user" {
-                format!("Hello {}", data.claims.username)
+                (ContentType::HTML, Template::render("main", context! { main: format!("Hello {}", data.claims.username)}))
             }
             else if data.claims.user_type == "admin" {
-                "Hello Admin".to_string()
+                (ContentType::HTML, Template::render("main", context! { main: "Hello Admin".to_string()}))
             } else {
-                "Access Denied".to_string()
+                (ContentType::HTML, Template::render("main", context! { main: "Access Denied".to_string()}))
             }
         },
-        Err(_) => "Unauthorized".to_string(),
+        Err(_) => (ContentType::HTML, Template::render("main", context! { main: "Unauthorized".to_string()})),
     }
 }
 
 #[get("/flag")]
-fn flag(cookies: &CookieJar<'_>) -> String {
+fn flag(cookies: &CookieJar<'_>) -> (ContentType, Template) {
     let token = cookies.get("token").map(|cookie| cookie.value()).unwrap_or("");
     match validate_token(token) {
         Ok(data) => {
             if data.claims.user_type == "admin" {
-                FLAG.clone()
+                (ContentType::HTML, Template::render("main", context! { main: FLAG.clone()}))
             } else {
-                "Access Denied".to_string()
+                (ContentType::HTML, Template::render("main", context! { main: "Access Denied".to_string()}))
             }
         },
-        Err(_) => "Unauthorized".to_string(),
+        Err(_) => (ContentType::HTML, Template::render("main", context! { main: "Unauthorized".to_string()})),
     }
 }
 
 #[launch]
 fn rocket() -> _ {
-    rocket::build().mount("/", routes![register_form, register, home, flag, login_form, login])
+    rocket::build()
+        .mount("/", routes![register_form, register, home, flag, login_form, login, logout])
+        .attach(Template::fairing())
 }
