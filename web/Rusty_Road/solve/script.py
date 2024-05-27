@@ -4,7 +4,7 @@ from time import sleep
 
 import requests
 
-base = "http://127.0.0.1:8000/"
+base = "http://127.0.0.1:1337/"
 
 N = 10
 ADMIN_PASSWORD = ""
