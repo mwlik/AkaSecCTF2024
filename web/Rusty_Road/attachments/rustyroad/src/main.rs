@@ -122,8 +122,8 @@ fn login_form() -> (ContentType, Template) {
 
 #[post("/login", data = "<form>")]
 fn login(form: Form<RegisterForm>, cookies: &CookieJar<'_>) -> Redirect {
-    let username = subs(form.username.clone());
-    let password = subs(form.password.clone());
+    let username = form.username.clone();
+    let password = form.password.clone();
 
     let users_lock = USERS.lock().unwrap();
 
