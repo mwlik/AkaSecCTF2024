@@ -25,9 +25,9 @@ lazy_static! {
         secret
     };
 
-    static ref ADMIN_PASSWORD: String = "REDACTED".to_string();
+    static ref ADMIN_PASSWORD: String = "M07H4F7H38167Hr33175JU57816M3".to_string();
 
-    static ref FLAG: String = "REDACTED".to_string();
+    static ref FLAG: String = "AKASEC{W311_17_41n7_7h47_2u57yyy_4f732_411}".to_string();
 
     static ref USERS: Mutex<Vec<User>> = Mutex::new(vec![
         User {
