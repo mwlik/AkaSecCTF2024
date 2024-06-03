@@ -11,7 +11,7 @@ ADMIN_PASSWORD = ""
 
 while True:
     username = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(N))
-    password = "A" * (71 - len(ADMIN_PASSWORD)) + "ADMIN_PASSWORD"
+    password = "A" * (71 - len(ADMIN_PASSWORD)) + "PASSWORD"
 
     response = requests.post(base + "register",
                              {"username": username, "password": password})
