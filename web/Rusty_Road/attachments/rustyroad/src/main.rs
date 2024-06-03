@@ -28,7 +28,7 @@ lazy_static! {
         secret
     };
 
-    static ref PASSWORD: String = "M07H4F7H38167Hr33175JU57816M3".to_string();
+    static ref PASSWORD: String = "REDACTED".to_string();
 
     static ref API_KEY: String = std::env::var("API_KEY").expect("API_KEY must be set");
 

@@ -38,5 +38,5 @@ COPY flag.txt /flag.txt
 # run the app
 USER bun
 EXPOSE 3000/tcp
-ENV API_KEY="hsc/j+2RtdmQh9v6IYPvBZZKw696lorIxde/7ppdUXM="
+ENV API_KEY="REDACTED"
 ENTRYPOINT [ "bun", "run", "index.ts" ]
