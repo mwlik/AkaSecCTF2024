@@ -2,8 +2,9 @@
 
 use rocket::form::Form;
 use rocket::http::ContentType;
-use rocket::response::Redirect; use serde::Deserialize;
-use serde::Serialize;
+use rocket::response::Redirect;
+use rocket::serde::{json::Json};
+use serde::{Serialize, Deserialize};
 use jsonwebtoken::{encode, Header, EncodingKey, decode, Validation, Algorithm, DecodingKey, TokenData};
 use jsonwebtoken::errors::Result;
 use rand::Rng;
@@ -14,6 +15,8 @@ use rocket::http::CookieJar;
 use std::sync::Mutex;
 use bcrypt::{hash, verify, DEFAULT_COST};
 use rocket_dyn_templates::{Template, context};
+use serde_json::json;
+use reqwest::header;
 
 lazy_static! {
     static ref SECRET: String = {
@@ -25,14 +28,14 @@ lazy_static! {
         secret
     };
 
-    static ref ADMIN_PASSWORD: String = "REDACTED".to_string();
+    static ref PASSWORD: String = "M07H4F7H38167Hr33175JU57816M3".to_string();
 
-    static ref FLAG: String = "REDACTED".to_string();
+    static ref API_KEY: String = std::env::var("API_KEY").expect("API_KEY must be set");
 
     static ref USERS: Mutex<Vec<User>> = Mutex::new(vec![
         User {
             username: "admin".to_string(),
-            password: hash_password(&ADMIN_PASSWORD),
+            password: hash_password(&PASSWORD),
         }
     ]);
 }
@@ -48,6 +51,11 @@ struct Claims {
 struct RegisterForm {
     username: String,
     password: String,
+}
+
+#[derive(serde::Deserialize)]
+struct LogData {
+    message: String,
 }
 
 #[derive(Debug)]
@@ -71,7 +79,7 @@ fn validate_token(token: &str) -> Result<TokenData<Claims>> {
 }
 
 fn subs(input: String) -> String {
-    input.replace("ADMIN_PASSWORD", &ADMIN_PASSWORD)
+    input.replace("PASSWORD", &PASSWORD)
 }
 
 fn hash_password(password: &str) -> String {
@@ -93,7 +101,7 @@ fn register_form() -> (ContentType, Template) {
 fn register(form: Form<RegisterForm>, cookies: &CookieJar<'_>) -> Redirect {
 
     let username = subs(form.username.clone());
-    if username.contains("admin") || username.contains(ADMIN_PASSWORD.as_str()) {
+    if username.contains("admin") || username.contains(PASSWORD.as_str()) {
         return Redirect::to("/register");
     }
 
@@ -172,13 +180,13 @@ fn home(cookies: &CookieJar<'_>) -> (ContentType, Template) {
     }
 }
 
-#[get("/flag")]
-fn flag(cookies: &CookieJar<'_>) -> (ContentType, Template) {
+#[get("/admin")]
+fn admin(cookies: &CookieJar<'_>) -> (ContentType, Template) {
     let token = cookies.get("token").map(|cookie| cookie.value()).unwrap_or("");
     match validate_token(token) {
         Ok(data) => {
             if data.claims.user_type == "admin" {
-                (ContentType::HTML, Template::render("main", context! { main: FLAG.clone()}))
+                (ContentType::HTML, Template::render("main", context! { main: "Welcome Admin".to_string()}))
             } else {
                 (ContentType::HTML, Template::render("main", context! { main: "Access Denied".to_string()}))
             }
@@ -187,9 +195,36 @@ fn flag(cookies: &CookieJar<'_>) -> (ContentType, Template) {
     }
 }
 
+#[post("/log", format = "json", data = "<log_data>")]
+async fn admin_log(cookies: &CookieJar<'_>, log_data: Json<LogData>) -> Json<String> {
+    let token = cookies.get("token").map(|cookie| cookie.value()).unwrap_or("");
+    match validate_token(token) {
+        Ok(data) => {
+            if data.claims.user_type == "admin" {
+                let client = reqwest::Client::new();
+                let res = client.post("http://adminlogging:3000/log")
+                    .header(header::AUTHORIZATION, API_KEY.as_str())
+                    .json(&json!({ "message": log_data.message }))
+                    .send()
+                    .await
+                    .expect("Failed to send request");
+
+                if res.status().is_success() {
+                    Json("{ \"status\": \"Logged successfully\" }".to_string())
+                } else {
+                    Json("{ \"status\": \"Failed to log\" }".to_string())
+                }
+            } else {
+                Json("{ \"status\": \"Access Denied\" }".to_string())
+            }
+        },
+        Err(_) => Json("{ \"status\": \"Unauthorized\" }".to_string()),
+    }
+}
+
 #[launch]
 fn rocket() -> _ {
     rocket::build()
-        .mount("/", routes![register_form, register, home, flag, login_form, login, logout])
+        .mount("/", routes![register_form, register, home, admin, admin_log, login_form, login, logout])
         .attach(Template::fairing())
 }
