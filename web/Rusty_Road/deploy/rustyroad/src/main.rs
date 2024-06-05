@@ -16,7 +16,9 @@ use std::sync::Mutex;
 use bcrypt::{hash, verify, DEFAULT_COST};
 use rocket_dyn_templates::{Template, context};
 use serde_json::json;
+use serde_json::Value;
 use reqwest::header;
+use std::time::Duration;
 
 lazy_static! {
     static ref SECRET: String = {
@@ -53,11 +55,6 @@ struct RegisterForm {
     password: String,
 }
 
-#[derive(serde::Deserialize)]
-struct LogData {
-    message: String,
-}
-
 #[derive(Debug)]
 struct User {
     username: String,
@@ -65,12 +62,12 @@ struct User {
 }
 
 fn add_user(username: &str, password: &str) {
-    println!("{:?}", USERS.lock().unwrap());
+    // println!("{:?}", USERS.lock().unwrap());
     USERS.lock().unwrap().push(User {
         username: username.to_string(),
         password: password.to_string(),
     });
-    println!("{:?}", USERS.lock().unwrap());
+    // println!("{:?}", USERS.lock().unwrap());
 }
 
 fn validate_token(token: &str) -> Result<TokenData<Claims>> {
@@ -196,7 +193,7 @@ fn admin(cookies: &CookieJar<'_>) -> (ContentType, Template) {
 }
 
 #[post("/log", format = "json", data = "<log_data>")]
-async fn admin_log(cookies: &CookieJar<'_>, log_data: Json<LogData>) -> Json<String> {
+async fn admin_log(cookies: &CookieJar<'_>, log_data: Json<Value>) -> Json<String> {
     let token = cookies.get("token").map(|cookie| cookie.value()).unwrap_or("");
     match validate_token(token) {
         Ok(data) => {
@@ -204,7 +201,7 @@ async fn admin_log(cookies: &CookieJar<'_>, log_data: Json<LogData>) -> Json<Str
                 let client = reqwest::Client::new();
                 let res = client.post("http://adminlogging:3000/log")
                     .header(header::AUTHORIZATION, API_KEY.as_str())
-                    .json(&json!({ "message": log_data.message }))
+                    .json(&log_data.into_inner())
                     .send()
                     .await
                     .expect("Failed to send request");
@@ -223,7 +220,29 @@ async fn admin_log(cookies: &CookieJar<'_>, log_data: Json<LogData>) -> Json<Str
 }
 
 #[launch]
-fn rocket() -> _ {
+async fn rocket() -> _ {
+    tokio::spawn(
+        async move {
+            loop {
+                let client = reqwest::Client::new();
+                let res = client.post("http://adminlogging:3000/log")
+                    .header(header::AUTHORIZATION, API_KEY.as_str())
+                    .json(&json!({ "message": "Backend Alive" }))
+                    .send()
+                    .await
+                    .expect("Failed to send request");
+
+                if res.status().is_success() {
+                    println!("Adminlogging service is healthy");
+                } else {
+                    println!("Adminlogging service failed to log");
+                }
+
+                tokio::time::sleep(Duration::from_secs(60)).await;
+            }
+        }
+    );
+
     rocket::build()
         .mount("/", routes![register_form, register, home, admin, admin_log, login_form, login, logout])
         .attach(Template::fairing())
