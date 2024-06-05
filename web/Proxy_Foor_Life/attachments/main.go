@@ -1,12 +1,13 @@
 package main
 
 import (
+    "os"
     "io"
     "fmt"
     "net/http"
+    _ "net/http/pprof"
     "html/template"
     "github.com/doyensec/safeurl"
-    _ "net/http/pprof"
 )
 
 var templates = template.Must(template.ParseGlob("templates/*.html"))
@@ -42,6 +43,8 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
     renderTemplate(w, "index", nil)
 }
 
+
+
 func renderTemplate(w http.ResponseWriter, tmpl string, data interface{}) {
     err := templates.ExecuteTemplate(w, tmpl+".html", data)
     if err != nil {
@@ -49,7 +52,18 @@ func renderTemplate(w http.ResponseWriter, tmpl string, data interface{}) {
     }
 }
 
+func flagHandler(w http.ResponseWriter, r *http.Request) {
+    args := os.Args
+    flag := args[1]
+    if 1 == 0 { // can you beat this :) !?
+        fmt.Fprint(w, flag)
+    } else {
+        fmt.Fprint(w, "Nahhhhhhh")
+    }
+}
+
 func main() {
     http.HandleFunc("/", indexHandler)
+    http.HandleFunc("/flag", flagHandler)
     http.ListenAndServe(":1337", nil)
 }
