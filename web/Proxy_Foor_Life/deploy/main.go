@@ -42,6 +42,13 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
     renderTemplate(w, "index", nil)
 }
 
+// /flag
+// function /flag -> return -> 
+// {
+// code flag commented => from args
+// return "NO0"
+//
+
 func renderTemplate(w http.ResponseWriter, tmpl string, data interface{}) {
     err := templates.ExecuteTemplate(w, tmpl+".html", data)
     if err != nil {
