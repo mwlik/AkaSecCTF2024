@@ -4,9 +4,9 @@ import (
     "io"
     "fmt"
     "net/http"
+    _ "net/http/pprof"
     "html/template"
     "github.com/doyensec/safeurl"
-    _ "net/http/pprof"
 )
 
 var templates = template.Must(template.ParseGlob("templates/*.html"))
